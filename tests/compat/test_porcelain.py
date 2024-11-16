@@ -21,8 +21,6 @@
 """Compatibility tests for dulwich.porcelain."""
 
 import os
-import platform
-import sys
 from unittest import skipIf
 
 from dulwich import porcelain
@@ -31,15 +29,17 @@ from dulwich.tests.utils import build_commit_graph
 from ..test_porcelain import PorcelainGpgTestCase
 from .utils import CompatTestCase, run_git_or_fail
 
+try:
+    import gpgme
+except ImportError:
+    gpgme = None
+
 
 @skipIf(
-    platform.python_implementation() == "PyPy" or sys.platform == "win32",
-    "gpgme not easily available or supported on Windows and PyPy",
+    gpgme is None,
+    "gpgme not available, skipping tests that require GPG signing",
 )
 class TagCreateSignTestCase(PorcelainGpgTestCase, CompatTestCase):
-    def setUp(self):
-        super().setUp()
-
     def test_sign(self):
         # Test that dulwich signatures can be verified by CGit
         c1, c2, c3 = build_commit_graph(
@@ -91,3 +91,74 @@ class TagCreateSignTestCase(PorcelainGpgTestCase, CompatTestCase):
         tag = self.repo[b"refs/tags/verifyme"]
         self.assertNotEqual(tag.signature, None)
         tag.verify()
+
+
+@skipIf(
+    gpgme is None,
+    "gpgme not available, skipping tests that require GPG signing",
+)
+class CommitCreateSignTestCase(PorcelainGpgTestCase, CompatTestCase):
+    def test_sign(self):
+        # Test that dulwich signatures can be verified by CGit
+        cfg = self.repo.get_config()
+        cfg.set(("user",), "signingKey", PorcelainGpgTestCase.DEFAULT_KEY_ID)
+        self.import_default_key()
+
+        porcelain.commit(
+            self.repo.path,
+            b"messy message messiah",
+            b"foo <foo@b.ar>",
+            signoff=True,
+        )
+
+        run_git_or_fail(
+            [f"--git-dir={self.repo.controldir()}", "verify-commit", "-v", "HEAD"],
+            env={"GNUPGHOME": os.environ["GNUPGHOME"]},
+        )
+
+    def test_verify(self):
+        # Test that CGit signatures can be verified by dulwich
+        self.import_default_key()
+
+        run_git_or_fail(
+            [
+                f"--git-dir={self.repo.controldir()}",
+                "commit",
+                "--allow-empty",
+                "-S" + PorcelainGpgTestCase.DEFAULT_KEY_ID,
+                "-m",
+                "foo",
+            ],
+            env={
+                "GNUPGHOME": os.environ["GNUPGHOME"],
+                "GIT_COMMITTER_NAME": "Joe Example",
+                "GIT_COMMITTER_EMAIL": "joe@example.com",
+            },
+        )
+        commit = self.repo[b"HEAD"]
+        self.assertNotEqual(commit.gpgsig, None)
+        commit.verify()
+
+    def test_verify_with_empty_message(self):
+        # Test that CGit signatures can be verified by dulwich
+        self.import_default_key()
+
+        run_git_or_fail(
+            [
+                f"--git-dir={self.repo.controldir()}",
+                "commit",
+                "--allow-empty",
+                "-S" + PorcelainGpgTestCase.DEFAULT_KEY_ID,
+                "--allow-empty-message",
+                "-m",
+                "",
+            ],
+            env={
+                "GNUPGHOME": os.environ["GNUPGHOME"],
+                "GIT_COMMITTER_NAME": "Joe Example",
+                "GIT_COMMITTER_EMAIL": "joe@example.com",
+            },
+        )
+        commit = self.repo[b"HEAD"]
+        self.assertNotEqual(commit.gpgsig, None)
+        commit.verify()

@@ -1,7 +1,12 @@
-0.22.6	UNRELEASED
+0.22.6	2024-11-16
 
  * ``ObjectStore.iter_prefix``: fix handling of missing
    loose object directories. (Jelmer Vernooĳ)
+
+ * Reject invalid refcontainer values (not 40 characters or symref).
+   (Arun Babu Neelicattu)
+
+ * Add type hints to various functions. (Castedo Ellerman)
 
 0.22.5	2024-11-07
 
