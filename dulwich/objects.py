@@ -1513,8 +1513,8 @@ class Commit(ShaFile):
     def without_sig(self) -> "Commit":
         """Return a Commit object copy with the signature (GPG or SSH) removed.
 
-        self.gpgsig is a signature for the raw byte string serialization of the
-        Commit object returned by without_sig.
+        The raw byte string serialization of the returned Commit object is the
+        cryptographic message for which self.gpgsig is the signature.
         """
         ret = self.copy()
         assert isinstance(ret, Commit)
