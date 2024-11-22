@@ -84,7 +84,7 @@ class SshKeygenVerifyCriterion(SshKeygenCheckCriterion):
                 subcmdline = [
                     "ssh-keygen", "-Y", "verify",
                      "-f", self.allowed_signers,
-                     "-I", principal,
+                     "-I", str(principal),
                      "-s", sig_file.name,
                 ]
                 self._ssh_keygen_check(subcmdline, crypto_msg, verify_time)
@@ -98,10 +98,10 @@ if __name__ == "__main__":
     parser.add_argument("--allow", type=Path, help="ssh-keygen allowed signers file")
     args = parser.parse_args()
 
-    if args.allow:
-        criterion = SshKeygenVerifyCriterion(args.allow, capture_output=False)
-    else:
+    if args.allow is None:
         criterion = SshKeygenCheckCriterion(capture_output=False)
+    else:
+        criterion = SshKeygenVerifyCriterion(args.allow, capture_output=False)
 
     repo = dulwich.repo.Repo(".")
     commit = repo[args.git_object.encode()]
