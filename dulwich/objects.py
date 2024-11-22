@@ -1684,15 +1684,18 @@ class GpgSignatureCriterion(SignatureCriterion):
         import gpg
 
         with gpg.Context() as ctx:
-            data, result = ctx.verify(crypto_msg, signature=signature)
+            try:
+                data, result = ctx.verify(crypto_msg, signature=signature)
+            except gpg.errors.BadSignatures as ex:
+                raise InvalidSignature from ex
             if self.keyids is not None:
                 keys = [ctx.get_key(keyid) for keyid in self.keyids]
                 for key in keys:
                     for sig in result.signatures:
                         if key.can_sign and key.fpr == sig.fpr:
                             return
-                ex = gpg.errors.MissingSignatures(result, keys, results=(data, result))
-                raise InvalidSignature from ex
+                ex2 = gpg.errors.MissingSignatures(result, keys, results=(data, result))
+                raise InvalidSignature from ex2
 
 
 # Hold on to the pure-python implementations for testing

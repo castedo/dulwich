@@ -22,8 +22,6 @@ import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
-import dulwich.repo
-
 from ..objects import InvalidSignature, SignatureCriterion
 
 # See the following C git implementation code for more details:
@@ -89,9 +87,11 @@ class SshKeygenVerifyCriterion(SshKeygenCheckCriterion):
                 ]
                 self._ssh_keygen_check(subcmdline, crypto_msg, verify_time)
 
+#ruff: noqa: I001
 
 if __name__ == "__main__":
     import argparse
+    import dulwich.repo
 
     parser = argparse.ArgumentParser()
     parser.add_argument("git_object", default="HEAD", nargs="?")
@@ -108,7 +108,7 @@ if __name__ == "__main__":
     print("commit", commit.id.decode())
     try:
         commit.check_signature(criterion)
-        # signature good
+        # signature good or not signed
     except InvalidSignature:
         pass
     print("Author:", commit.author.decode())
