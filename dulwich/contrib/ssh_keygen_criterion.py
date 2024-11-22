@@ -15,6 +15,7 @@
 # <http://www.gnu.org/licenses/> for a copy of the GNU General Public License
 # and <http://www.apache.org/licenses/LICENSE-2.0> for a copy of the Apache
 # License, Version 2.0.
+# fmt: off
 
 import subprocess
 import tempfile
@@ -48,7 +49,9 @@ class SshKeygenCheckCriterion(SignatureCriterion):
             "-n", "git",
             "-O", "verify-time=" + verify_dt.strftime("%Y%m%d%H%M%SZ"),
         ]
-        result = subprocess.run(cmdline, input=crypto_msg, capture_output=self.capture_output)
+        result = subprocess.run(
+            cmdline, input=crypto_msg, capture_output=self.capture_output
+        )
         if 0 != result.returncode:
             raise InvalidSignature
 
